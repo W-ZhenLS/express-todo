@@ -59,7 +59,7 @@ router.get('/getOngoing', async (req, res) => {
                 `SELECT t_id "id", t_title "title", t_desc "description", to_char(t_date, 'yyyy-mm-dd') "date", t_isCompleted "isCompleted" 
                     FROM TODO_ITEM 
                     WHERE t_isCompleted = false 
-                    ORDER BY t_date DESC 
+                    ORDER BY t_date 
                 `
             );
         } else {
@@ -67,7 +67,7 @@ router.get('/getOngoing', async (req, res) => {
                 `SELECT t_id "id", t_title "title", t_desc "description", to_char(t_date, 'yyyy-mm-dd') "date", t_isCompleted "isCompleted" 
                     FROM TODO_ITEM 
                     WHERE t_isCompleted = false 
-                    ORDER BY t_date DESC 
+                    ORDER BY t_date 
                     LIMIT $1 
                     OFFSET $2`,
                 [size, (page - 1) * size]
