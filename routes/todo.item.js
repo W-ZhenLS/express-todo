@@ -86,6 +86,51 @@ router.get('/getOngoing', async (req, res) => {
     }
 });
 
+// Get todos of the day
+router.get('/todosOfTheDay', async (req, res) => {
+    const size = req.query.size;
+    const page = req.query.page || 1;   // by default show page 1
+
+
+    try {
+        let todosOfTheDay;
+
+        // If size not specified, get all todos of the day
+        if (!size) {
+            todosOfTheDay = await pool.query(
+                `SELECT t_id "id", t_title "title", t_desc "description", to_char(t_date, 'yyyy-mm-dd') "date", t_isCompleted "isCompleted" 
+                    FROM TODO_ITEM 
+                    WHERE t_date = CURRENT_DATE
+                    AND t_isCompleted = FALSE
+                    ORDER BY t_id
+                `
+            );
+        } else {
+            todosOfTheDay = await pool.query(
+                `SELECT t_id "id", t_title "title", t_desc "description", to_char(t_date, 'yyyy-mm-dd') "date", t_isCompleted "isCompleted" 
+                    FROM TODO_ITEM 
+                    WHERE t_date = CURRENT_DATE
+                    AND t_isCompleted = FALSE
+                    ORDER BY t_id
+                    LIMIT $1 
+                    OFFSET $2
+                `,
+                [size, (page - 1) * size]
+            );
+
+        }
+        res.status(200).json({
+            timestamp: new Date(),
+            itemsLength: todosOfTheDay.rowCount,
+            result: todosOfTheDay.rows
+        });
+
+    } catch (err) {
+        console.error(err.message);
+        res.status(403).send('403 Forbidden Access');
+    }
+});
+
 // Get history - todos with isCompleted=true
 router.get('/getCompleted', async (req, res) => {
     const size = req.query.size;
