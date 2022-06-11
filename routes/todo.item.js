@@ -1,6 +1,5 @@
 const express = require('express');
-const { append } = require('express/lib/response');
-const pool = require('../dbconfig');
+const todoModel = require('../models/todo.model');
 const router = express.Router();
 
 // CRUD TODO_ITEM Routes
@@ -12,26 +11,7 @@ router.get('/getAll', async (req, res) => {
     const page = req.query.page || 1;   // by default show page 1
 
     try {
-        let allTodos;
-
-        // if size is not specify, SELECT * without limit & offset
-        if (!size) {
-            allTodos = await pool.query(
-                `SELECT t_id "id", t_title "title", t_desc "description", to_char(t_date, 'yyyy-mm-dd') "date", t_isCompleted "isCompleted" 
-                    FROM TODO_ITEM 
-                    ORDER BY t_date DESC
-                `
-            );
-        } else {
-            allTodos = await pool.query(
-                `SELECT t_id "id", t_title "title", t_desc "description", to_char(t_date, 'yyyy-mm-dd') "date", t_isCompleted "isCompleted" 
-                    FROM TODO_ITEM 
-                    ORDER BY t_date DESC
-                    LIMIT $1 
-                    OFFSET $2`,
-                [size, (page - 1) * size]
-            );
-        }
+        const allTodos = await todoModel.getAllTodos(size, page);
 
         res.status(200).json({
             timestamp: new Date(),
@@ -51,28 +31,7 @@ router.get('/getOngoing', async (req, res) => {
     const page = req.query.page || 1;   // by default show page 1
 
     try {
-        let ongoingTodos;
-
-        // if size is not specified, get all ongoing todos
-        if (!size) {
-            ongoingTodos = await pool.query(
-                `SELECT t_id "id", t_title "title", t_desc "description", to_char(t_date, 'yyyy-mm-dd') "date", t_isCompleted "isCompleted" 
-                    FROM TODO_ITEM 
-                    WHERE t_isCompleted = false 
-                    ORDER BY t_date 
-                `
-            );
-        } else {
-            ongoingTodos = await pool.query(
-                `SELECT t_id "id", t_title "title", t_desc "description", to_char(t_date, 'yyyy-mm-dd') "date", t_isCompleted "isCompleted" 
-                    FROM TODO_ITEM 
-                    WHERE t_isCompleted = false 
-                    ORDER BY t_date 
-                    LIMIT $1 
-                    OFFSET $2`,
-                [size, (page - 1) * size]
-            );
-        }
+        let ongoingTodos = await todoModel.getOngoingTodos(size, page);
 
         res.status(200).json({
             timestamp: new Date(),
@@ -91,34 +50,9 @@ router.get('/todosOfTheDay', async (req, res) => {
     const size = req.query.size;
     const page = req.query.page || 1;   // by default show page 1
 
-
     try {
-        let todosOfTheDay;
+        let todosOfTheDay = await todoModel.getTodosOfTheDay(size, page);
 
-        // If size not specified, get all todos of the day
-        if (!size) {
-            todosOfTheDay = await pool.query(
-                `SELECT t_id "id", t_title "title", t_desc "description", to_char(t_date, 'yyyy-mm-dd') "date", t_isCompleted "isCompleted" 
-                    FROM TODO_ITEM 
-                    WHERE t_date = CURRENT_DATE
-                    AND t_isCompleted = FALSE
-                    ORDER BY t_id
-                `
-            );
-        } else {
-            todosOfTheDay = await pool.query(
-                `SELECT t_id "id", t_title "title", t_desc "description", to_char(t_date, 'yyyy-mm-dd') "date", t_isCompleted "isCompleted" 
-                    FROM TODO_ITEM 
-                    WHERE t_date = CURRENT_DATE
-                    AND t_isCompleted = FALSE
-                    ORDER BY t_id
-                    LIMIT $1 
-                    OFFSET $2
-                `,
-                [size, (page - 1) * size]
-            );
-
-        }
         res.status(200).json({
             timestamp: new Date(),
             itemsLength: todosOfTheDay.rowCount,
@@ -137,28 +71,7 @@ router.get('/getCompleted', async (req, res) => {
     const page = req.query.page || 1;   // by default show page 1
 
     try {
-        let completedTodos;
-
-        // if size is not specified, get all ongoing todos
-        if (!size) {
-            completedTodos = await pool.query(
-                `SELECT t_id "id", t_title "title", t_desc "description", to_char(t_date, 'yyyy-mm-dd') "date", t_isCompleted "isCompleted" 
-                    FROM TODO_ITEM 
-                    WHERE t_isCompleted = true 
-                    ORDER BY t_date DESC 
-                `
-            );
-        } else {
-            completedTodos = await pool.query(
-                `SELECT t_id "id", t_title "title", t_desc "description", to_char(t_date, 'yyyy-mm-dd') "date", t_isCompleted "isCompleted" 
-                    FROM TODO_ITEM 
-                    WHERE t_isCompleted = true 
-                    ORDER BY t_date DESC 
-                    LIMIT $1 
-                    OFFSET $2`,
-                [size, (page - 1) * size]
-            );
-        }
+        let completedTodos = await todoModel.getCompletedTodos(size, page);
 
         res.status(200).json({
             timestamp: new Date(),
@@ -175,12 +88,7 @@ router.get('/getCompleted', async (req, res) => {
 // Get todo by id
 router.get('/:todoId', async (req, res) => {
     try {
-        const targetTodo = await pool.query(
-            `SELECT t_id "id", t_title "title", t_desc "description", to_char(t_date, 'yyyy-mm-dd') "date", t_isCompleted "isCompleted" 
-                FROM TODO_ITEM 
-                WHERE t_id = $1`,
-            [req.params.todoId]
-        );
+        const targetTodo = await todoModel.getTodoById(req.params.todoId);
 
         // Exclude all metadata from result
         const targetTodoContent = targetTodo.rows[0];
@@ -215,17 +123,7 @@ router.post('/', async (req, res) => {
             1    // temporarily using admin id
         ];
 
-        const createdTodo = await pool.query(
-            `INSERT INTO TODO_ITEM (
-                t_title, t_desc, t_date, t_isCompleted, t_user_id
-                )
-            VALUES (
-                $1, $2, $3, $4, $5
-            ) 
-            RETURNING t_id "id", t_title "title", t_desc "description", to_char(t_date, 'yyyy-mm-dd') "date", t_isCompleted "isCompleted"
-            `,
-            todoToCreate
-        );
+        let createdTodo = await todoModel.createTodo(todoToCreate);
 
         res.status(201).json({
             timestamp: new Date(),
@@ -240,6 +138,7 @@ router.post('/', async (req, res) => {
 
 // Update todo by id
 router.put('/:todoId', async (req, res) => {
+
     try {
         const valuesToUpdate = [
             req.body.title,
@@ -249,16 +148,9 @@ router.put('/:todoId', async (req, res) => {
             req.params.todoId   // id of todoToUpdate, $5 in SQL query
         ];
 
-        const updatedTodo = await pool.query(
-            `UPDATE TODO_ITEM 
-                SET t_title = $1, t_desc = $2, t_date = $3, t_isCompleted = $4 
-                WHERE t_id = $5
-                RETURNING t_id "id", t_title "title", t_desc "description", to_char(t_date, 'yyyy-mm-dd') "date", t_isCompleted "isCompleted"
-                `,
-            valuesToUpdate
-        );
-
+        let updatedTodo = await todoModel.updateTodoById(valuesToUpdate);
         const updatedTodoContent = updatedTodo.rows[0];
+
         if (!updatedTodoContent) {
             res.status(403).json({
                 timestamp: new Date(),
@@ -281,16 +173,9 @@ router.put('/:todoId', async (req, res) => {
 router.put('/:todoId/complete', async (req, res) => {
     try {
         const todoId = req.params.todoId;
-        const updatedTodo = await pool.query(
-            `UPDATE TODO_ITEM 
-                SET t_isCompleted = true 
-                WHERE t_id = $1
-                RETURNING t_id "id", t_title "title", t_desc "description", to_char(t_date, 'yyyy-mm-dd') "date", t_isCompleted "isCompleted"
-            `,
-            [todoId]
-        );
-
+        const updatedTodo = await todoModel.completeTodoById(todoId);
         const updatedTodoContent = updatedTodo.rows[0];
+
         if (!updatedTodoContent) {
             res.status(403).json({
                 timestamp: new Date(),
@@ -313,15 +198,9 @@ router.put('/:todoId/complete', async (req, res) => {
 router.delete('/:todoId', async (req, res) => {
     try {
         const todoId = req.params.todoId;
-        const deletedTodo = await pool.query(
-            `DELETE FROM TODO_ITEM 
-                WHERE t_id = $1
-                RETURNING t_id "id", t_title "title", t_desc "description", to_char(t_date, 'yyyy-mm-dd') "date", t_isCompleted "isCompleted"
-            `,
-            [todoId]
-        );
-
+        const deletedTodo = await todoModel.deleteTodoById(todoId);
         const deletedTodoContent = deletedTodo.rows[0];
+
         if (!deletedTodoContent) {
             res.status(403).json({
                 timestamp: new Date(),
