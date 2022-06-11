@@ -1,6 +1,7 @@
 const express = require('express');
 const todoModel = require('../models/todo.model');
 const router = express.Router();
+const { todoToCreateSchema, todoToUpdateSchema } = require('../validation/schema.validation');
 
 // CRUD TODO_ITEM Routes
 // Currently ignore t_user_id field as user is not implemented yet
@@ -114,11 +115,16 @@ router.get('/:todoId', async (req, res) => {
 
 // Create todo
 router.post('/', async (req, res) => {
+
     try {
+        // Request body validation
+        const validTodoToCreate = await todoToCreateSchema.validateAsync(req.body);
+
+        // Initialize todo object
         const todoToCreate = [
-            req.body.title,
-            req.body.description,
-            req.body.date,
+            validTodoToCreate.title,
+            validTodoToCreate.description,
+            validTodoToCreate.date,
             false,
             1    // temporarily using admin id
         ];
@@ -131,8 +137,17 @@ router.post('/', async (req, res) => {
         });
 
     } catch (err) {
-        console.error(err.message);
-        res.status(403).send(err.message);
+        // Joi error indicates error in input, thus returning 400-Bad-Request
+        if (err.isJoi === true) {
+            res.status(400).json({
+                timestamp: new Date(),
+                result: null,
+                errorMessage: err.message
+            });
+        } else {
+            console.error(err.message);
+            res.status(403).send(err.message);
+        }
     }
 });
 
@@ -140,11 +155,14 @@ router.post('/', async (req, res) => {
 router.put('/:todoId', async (req, res) => {
 
     try {
+        // Request body validation
+        const validTodoToUpdate = await todoToUpdateSchema.validateAsync(req.body);
+
         const valuesToUpdate = [
-            req.body.title,
-            req.body.description,
-            req.body.date,
-            req.body.isCompleted,
+            validTodoToUpdate.title,
+            validTodoToUpdate.description,
+            validTodoToUpdate.date,
+            validTodoToUpdate.isCompleted,
             req.params.todoId   // id of todoToUpdate, $5 in SQL query
         ];
 
@@ -164,8 +182,17 @@ router.put('/:todoId', async (req, res) => {
         }
 
     } catch (err) {
-        console.error(err.message);
-        res.status(403).send(err.message);
+        // Joi error indicates error in input, thus returning 400-Bad-Request
+        if (err.isJoi === true) {
+            res.status(400).json({
+                timestamp: new Date(),
+                result: null,
+                errorMessage: err.message
+            });
+        } else {
+            console.error(err.message);
+            res.status(403).send(err.message);
+        }
     }
 });
 
