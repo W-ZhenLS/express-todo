@@ -22,7 +22,11 @@ router.get('/getAll', async (req, res) => {
 
     } catch (err) {
         console.error(err.message);
-        res.status(403).send('403 Forbidden Access');
+        res.status(403).json({
+            timestamp: new Date(),
+            result: null,
+            errorMessage: err.message
+        });
     }
 });
 
@@ -42,7 +46,11 @@ router.get('/getOngoing', async (req, res) => {
 
     } catch (err) {
         console.error(err.message);
-        res.status(403).send('403 Forbidden Access');
+        res.status(403).json({
+            timestamp: new Date(),
+            result: null,
+            errorMessage: err.message
+        });
     }
 });
 
@@ -62,7 +70,11 @@ router.get('/todosOfTheDay', async (req, res) => {
 
     } catch (err) {
         console.error(err.message);
-        res.status(403).send('403 Forbidden Access');
+        res.status(403).json({
+            timestamp: new Date(),
+            result: null,
+            errorMessage: err.message
+        });
     }
 });
 
@@ -82,7 +94,11 @@ router.get('/getCompleted', async (req, res) => {
 
     } catch (err) {
         console.error(err.message);
-        res.status(403).send('403 Forbidden Access');
+        res.status(403).json({
+            timestamp: new Date(),
+            result: null,
+            errorMessage: err.message
+        });
     }
 });
 
@@ -109,7 +125,11 @@ router.get('/:todoId', async (req, res) => {
 
     } catch (err) {
         console.error(err.message);
-        res.status(403).send('403 Forbidden Access');
+        res.status(403).json({
+            timestamp: new Date(),
+            result: null,
+            errorMessage: err.message
+        });
     }
 });
 
@@ -146,7 +166,11 @@ router.post('/', async (req, res) => {
             });
         } else {
             console.error(err.message);
-            res.status(403).send(err.message);
+            res.status(403).json({
+                timestamp: new Date(),
+                result: null,
+                errorMessage: err.message
+            });
         }
     }
 });
@@ -191,7 +215,11 @@ router.put('/:todoId', async (req, res) => {
             });
         } else {
             console.error(err.message);
-            res.status(403).send(err.message);
+            res.status(403).json({
+                timestamp: new Date(),
+                result: null,
+                errorMessage: err.message
+            });
         }
     }
 });
@@ -217,7 +245,11 @@ router.put('/:todoId/complete', async (req, res) => {
 
     } catch (err) {
         console.error(err.message);
-        res.status(403).send('403 Forbidden Access');
+        res.status(403).json({
+            timestamp: new Date(),
+            result: null,
+            errorMessage: err.message
+        });
     }
 });
 
@@ -242,7 +274,11 @@ router.delete('/:todoId', async (req, res) => {
 
     } catch (err) {
         console.error(err.message);
-        res.status(403).send(err.message);
+        res.status(403).json({
+            timestamp: new Date(),
+            result: null,
+            errorMessage: err.message
+        });
     }
 });
 
